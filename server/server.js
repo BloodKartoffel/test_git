@@ -121,3 +121,6 @@ server.on('connection', (ws) => {
 });
 
 console.log(`Сервер чату запущено на ws://localhost:${serverPort}`);
+
+// Експортуємо сервер для тестів
+module.exports = server;
