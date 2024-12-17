@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-// __tests__/server.test.js
+//  __tests__/server.test.js
 const WebSocket = require('ws');
 const server = require('../server/server');
 const PORT = 3030;
