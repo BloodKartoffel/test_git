@@ -1,11 +1,24 @@
 {
-  "name": "test_git",
+  "name": "widget",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:css": "npx tailwindcss -i ./src/styles/main-dev.css -o ./dist/main.css --minify",
+    "build:js": "npx esbuild src/index.js --bundle --minify --outfile=dist/widget.js --format=esm",
+    "build": "npm run build:css && npm run build:js",
+    "dev:css": "npx tailwindcss -i ./src/styles/main-dev.css -o ./dist/main.css --watch",
+    "dev:js": "npx esbuild src/index.js --bundle --outfile=dist/widget.js --watch --format=esm",
+    "server": "node server/server.js",
+    "dev": "concurrently \"npm run dev:css\" \"npm run dev:js\" \"npm run server\""
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "tailwindcss": "^3.4.15",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
 }
