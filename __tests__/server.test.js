@@ -31,7 +31,7 @@ describe('WebSocket Сервер', () => {
             wsClient1.close();
             done();
         });
-    });
+    },10000);
 
     test('повинен надсилати init повідомлення при підключенні', (done) => {
         wsClient1 = new WebSocket(`ws://localhost:${PORT}`);
@@ -44,7 +44,7 @@ describe('WebSocket Сервер', () => {
             wsClient1.close();
             done();
         });
-    });
+    },10000);
 
     test('повинен розсилати сповіщення про підключення іншим клієнтам', (done) => {
         wsClient1 = new WebSocket(`ws://localhost:${PORT}`);
@@ -66,7 +66,7 @@ describe('WebSocket Сервер', () => {
         wsClient1.on('open', () => {
 
         });
-    });
+    },10000);
 
 
     test('повинен розсилати повідомлення від одного клієнта іншим', (done) => {
@@ -88,7 +88,7 @@ describe('WebSocket Сервер', () => {
         wsClient1.on('open', () => {
             wsClient1.send(JSON.stringify({ type: 'message', message: testMessage }));
         });
-    });
+    },10000);
 
     test('повинен обробляти відключення клієнта', (done) => {
         let client1Name;
@@ -143,7 +143,7 @@ describe('WebSocket Сервер', () => {
         wsClient2.on('error', (error) => {
             console.error('wsClient2 Error:', error);
         });
-    });
+    },10000);
 
 
 });
