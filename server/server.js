@@ -1,7 +1,8 @@
+const http = require('http');
 const WebSocket = require('ws');
-const serverPort = 3030;
+const url = require('url');
 
-const server = new WebSocket.Server({ port: serverPort });
+const serverPort = 3030;
 
 const clients = new Map();
 
@@ -25,31 +26,11 @@ function generateRandomName() {
 
 function generateRandomBrightColor() {
     const allowedColors = [
-        '#9F8CEF',
-        '#692A54',
-        '#543029',
-        '#2B5C1F',
-        '#69622E',
-        '#4A90E2',
-        '#50E3C2',
-        '#F5A623',
-        '#D0021B',
-        '#8B572A',
-        '#417505',
-        '#BD10E0',
-        '#9013FE',
-        '#F8E71C',
-        '#B8E986',
-        '#50E3C2',
-        '#7ED321',
-        '#417505',
-        '#F5A623',
-        '#D0021B',
-        '#8B572A',
-        '#F8E71C',
-        '#B8E986',
-        '#7ED321',
-        '#417505'
+        '#9F8CEF', '#692A54', '#543029', '#2B5C1F', '#69622E',
+        '#4A90E2', '#50E3C2', '#F5A623', '#D0021B', '#8B572A',
+        '#417505', '#BD10E0', '#9013FE', '#F8E71C', '#B8E986',
+        '#50E3C2', '#7ED321', '#417505', '#F5A623', '#D0021B',
+        '#8B572A', '#F8E71C', '#B8E986', '#7ED321', '#417505'
     ];
     return allowedColors[Math.floor(Math.random() * allowedColors.length)];
 }
@@ -62,7 +43,57 @@ function broadcast(data, sender) {
     }
 }
 
-server.on('connection', (ws) => {
+// Створюємо HTTP-сервер
+const httpServer = http.createServer((req, res) => {
+    const parsedUrl = url.parse(req.url, true);
+
+    // Дозволяємо CORS
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Дозволити запити з будь-якого домену. За потреби обмежте домен.
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Обробка preflight (OPTIONS) запитів для CORS
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    if (parsedUrl.pathname === '/disconnect' && req.method === 'GET') {
+        const userName = parsedUrl.query.user;
+        if (!userName) {
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            res.end('User name is required');
+            return;
+        }
+
+        // Знаходимо клієнта за ім'ям користувача
+        let targetClient = null;
+        for (const [client, info] of clients.entries()) {
+            if (info.name === userName && client.readyState === WebSocket.OPEN) {
+                targetClient = client;
+                break;
+            }
+        }
+
+        if (targetClient) {
+            targetClient.close();
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('Disconnected');
+        } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Client not found or already disconnected');
+        }
+    } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not found');
+    }
+});
+
+// Запускаємо WebSocket-сервер на базі HTTP-сервера
+const wss = new WebSocket.Server({ server: httpServer });
+
+wss.on('connection', (ws) => {
     const userName = generateRandomName();
     const userColor = generateRandomBrightColor();
 
@@ -105,14 +136,17 @@ server.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        clients.delete(ws);
-        console.log(`${userName} від’єднався від чату`);
+        const userInfo = clients.get(ws);
+        if (userInfo) {
+            clients.delete(ws);
+            console.log(`${userInfo.name} від’єднався від чату`);
 
-        const leaveMessage = {
-            type: 'notification',
-            message: `${userName} від’єднався від чату`
-        };
-        broadcast(JSON.stringify(leaveMessage), ws);
+            const leaveMessage = {
+                type: 'notification',
+                message: `${userInfo.name} від’єднався від чату`
+            };
+            broadcast(JSON.stringify(leaveMessage), ws);
+        }
     });
 
     ws.on('error', (error) => {
@@ -120,7 +154,7 @@ server.on('connection', (ws) => {
     });
 });
 
-console.log(`Сервер чату запущено на ws://localhost:${serverPort}`);
-
-// Експортуємо сервер для тестів
-module.exports = server;
+httpServer.listen(serverPort, () => {
+    console.log(`Сервер чату запущено на http://localhost:${serverPort}`);
+    console.log(`WebSocket endpoint: ws://localhost:${serverPort}`);
+});

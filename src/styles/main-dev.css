@@ -151,3 +151,10 @@ body {
 .timestamp {
     font-size: 0.75rem;
 }
+
+.chat-input:disabled,
+.chat-send-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+

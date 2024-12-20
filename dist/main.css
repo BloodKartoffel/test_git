@@ -1289,6 +1289,12 @@ body {
   font-size: 0.75rem;
 }
 
+.chat-input:disabled,
+.chat-send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .hover\:bg-blue-700:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(29 78 216 / var(--tw-bg-opacity, 1));
@@ -1344,3 +1350,4 @@ body {
     width: 340px;
   }
 }
+

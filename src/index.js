@@ -32,6 +32,11 @@
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M14.9677 9.76342L25.4678 15.0105C27.1081 15.8302 27.1081 18.1696 25.4678 18.9893L14.9677 24.2364C13.1002 25.1696 11.0908 23.2505 11.9388 21.3436L13.4687 17.9032C13.4982 17.8369 13.5243 17.7694 13.547 17.7011H17.3485C17.7358 17.7011 18.0497 17.3872 18.0497 16.9999C18.0497 16.6126 17.7358 16.2987 17.3485 16.2987L13.547 16.2987C13.5243 16.2304 13.4982 16.1629 13.4687 16.0965L11.9388 12.6562C11.0908 10.7493 13.1002 8.8302 14.9677 9.76342ZM7.30078 15.13C7.30078 14.7428 7.61472 14.4288 8.00199 14.4288H9.87188C10.2592 14.4288 10.5731 14.7428 10.5731 15.13C10.5731 15.5173 10.2592 15.8313 9.87188 15.8313H8.00199C7.61472 15.8313 7.30078 15.5173 7.30078 15.13ZM8.00199 18.1686C7.61472 18.1686 7.30078 18.4826 7.30078 18.8698C7.30078 19.2571 7.61472 19.5711 8.00199 19.5711H9.87188C10.2592 19.5711 10.5731 19.2571 10.5731 18.8698C10.5731 18.4826 10.2592 18.1686 9.87188 18.1686H8.00199Z" fill="white"></path>
                   </svg>
                 </button>
+                <button id="chat-widget-disconnect-button" class="chat-send-button" aria-label="Відключитися">
+                  <svg style="width:18px;height:18px;margin-left:4px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3m12-3l3 3-3 3m-6 6H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                  </svg>
+                </button>
               </footer>
             </div>
           </div>
@@ -44,11 +49,13 @@
         const textInput = chatContainer.querySelector('#chat-widget-input');
         const sendButton = chatContainer.querySelector('#chat-widget-send-button');
         const expandButton = chatContainer.querySelector('#chat-widget-expand-button');
+        const disconnectButton = chatContainer.querySelector('#chat-widget-disconnect-button');
 
         let userName = '';
         let userColor = '';
+        let isDisconnected = false;
 
-        const socket = new WebSocket('ws://localhost:3030');
+        const socket = new WebSocket(`ws://localhost:3030`);
 
         socket.addEventListener('open', () => {
             console.log('Підключено до WebSocket серверу');
@@ -78,6 +85,10 @@
         socket.addEventListener('close', () => {
             console.log('Відключено від WebSocket серверу');
             addNotification('Відключено від серверу');
+            if (isDisconnected) {
+                addNotification('Ви відключились від чату');
+                blockInterface();
+            }
         });
 
         socket.addEventListener('error', (error) => {
@@ -103,7 +114,7 @@
             applyExpandedStyles();
             closeButton.style.display = 'flex';
             expandButton.style.display = 'none';
-            textInput.focus();
+            if (!isDisconnected) textInput.focus();
         };
 
         const collapseChat = () => {
@@ -165,7 +176,7 @@
 
         const prepareMessage = () => {
             const userMessage = textInput.value.trim();
-            if (!userMessage || socket.readyState !== WebSocket.OPEN) return;
+            if (!userMessage || socket.readyState !== WebSocket.OPEN || isDisconnected) return;
 
             expandChat();
             addMessage(userName, userColor, userMessage, 'sent');
@@ -176,6 +187,12 @@
                 message: userMessage
             };
             socket.send(JSON.stringify(messageData));
+        };
+
+        const blockInterface = () => {
+            textInput.disabled = true;
+            sendButton.disabled = true;
+            disconnectButton.disabled = true;
         };
 
         closeButton.addEventListener('click', () => {
@@ -201,6 +218,24 @@
             } else {
                 collapseChat();
             }
+        });
+
+        disconnectButton.addEventListener('click', () => {
+            if (isDisconnected) return;
+            fetch(`http://localhost:3030/disconnect?user=${encodeURIComponent(userName)}`, {
+                method: 'GET'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        isDisconnected = true;
+                    } else {
+                        addNotification('Не вдалося відключитися');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка запиту на відключення:', error);
+                    addNotification('Сталася помилка при відключенні');
+                });
         });
 
         collapseChat();
